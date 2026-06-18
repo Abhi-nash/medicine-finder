@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Medicine {
+  id           Int     @id @default(autoincrement())
+  name         String
+  manufacturer String?
+  compositions  Composition[]
+  shopMedicines ShopMedicine[]
+}
+
+model Composition {
+  id       Int    @id @default(autoincrement())
+  name     String
+  strength String
+  medicines Medicine[]
+  @@unique([name, strength], name: "name_strength")
+}
+
+model Shop {
+  id            Int    @id @default(autoincrement())
+  shopName      String
+  contactNumber String
+  pincode       String
+  medicines     ShopMedicine[]
+  user          User?
+}
+
+model ShopMedicine {
+  id         Int @id @default(autoincrement())
+  shopId     Int
+  medicineId Int
+  mrp        Float
+  quantity   Int
+  shop       Shop     @relation(fields: [shopId], references: [id])
+  medicine   Medicine @relation(fields: [medicineId], references: [id])
+  @@unique([shopId, medicineId])
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  username String @unique
+  password String
+  shopId Int?  @unique
+  shop   Shop? @relation(fields: [shopId], references: [id])
+}
