@@ -1,12 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShopDto } from './dto/create-shop.dto';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class ShopService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private userService: UserService,
+  ) {}
 
   async create(dto: CreateShopDto) {
+  const shopkeeper = await this.userService.requireRole(dto.userId, 'SHOPKEEPER');
+  if (shopkeeper.shopId) {
+    throw new Error('This shopkeeper already owns a shop.');
+  }
   const user = await this.prisma.user.findUnique({
     where: {
       id: dto.userId,
@@ -53,10 +61,14 @@ async getShop(id: number) {
     },
   });
 }
-async getAll() {
+async getAll(pincode?: string) {
   return this.prisma.shop.findMany({
-     include: {
-      medicines: true,
+    where: pincode ? { pincode } : undefined,
+    include: {
+      medicines: {
+        where: { quantity: { gt: 0 } },
+        include: { medicine: true },
+      },
       user: {
         select: {
           id: true,

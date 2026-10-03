@@ -13,19 +13,25 @@ datasource db {
 }
 
 model Medicine {
-  id           Int     @id @default(autoincrement())
-  name         String
+  id             Int     @id @default(autoincrement())
+  brandName      String  @map("name")
   manufacturer String?
-  compositions  Composition[]
+  compositionKey String  @default("")
+  compositions   Composition[]
   shopMedicines ShopMedicine[]
+
+  @@index([compositionKey])
 }
 
 model Composition {
-  id       Int    @id @default(autoincrement())
-  name     String
-  strength String
-  medicines Medicine[]
-  @@unique([name, strength], name: "name_strength")
+  id             Int      @id @default(autoincrement())
+  medicineId     Int
+  ingredientName String    @map("name")
+  strength       String
+  medicine       Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+
+  @@unique([medicineId, ingredientName, strength])
+  @@index([medicineId])
 }
 
 model Shop {
@@ -45,6 +51,7 @@ model ShopMedicine {
   quantity   Int
   shop       Shop     @relation(fields: [shopId], references: [id])
   medicine   Medicine @relation(fields: [medicineId], references: [id])
+  purchases  Purchase[]
   @@unique([shopId, medicineId])
 }
 
@@ -53,6 +60,27 @@ model User {
   name     String
   username String @unique
   password String
+  role     String @default("CUSTOMER")
+  pincode  String?
   shopId Int?  @unique
   shop   Shop? @relation(fields: [shopId], references: [id])
+  purchases Purchase[]
+
+  @@index([role])
+}
+
+model Purchase {
+  id             Int          @id @default(autoincrement())
+  buyerId        Int
+  shopMedicineId Int
+  quantity       Int
+  unitPrice      Float
+  totalPrice     Float
+  status         String       @default("COMPLETED")
+  createdAt      DateTime     @default(now())
+  buyer          User         @relation(fields: [buyerId], references: [id])
+  shopMedicine   ShopMedicine @relation(fields: [shopMedicineId], references: [id])
+
+  @@index([buyerId])
+  @@index([shopMedicineId])
 }

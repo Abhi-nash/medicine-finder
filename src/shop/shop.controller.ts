@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Param } from '@nestjs/common';
+import { Body, Controller, Post, Get, Param, Query } from '@nestjs/common';
 import { ShopService } from './shop.service';
 import { CreateShopDto } from './dto/create-shop.dto';
 
@@ -15,8 +15,8 @@ export class ShopController {
     return this.shopService.getShop(Number(id));
   }
   @Get()
-  getAll(){
-    return this.shopService.getAll();
+  getAll(@Query('pincode') pincode?: string) {
+    return this.shopService.getAll(pincode?.trim());
   }
   @Get(':id/medicines')
 getMedicines(@Param('id') id: string) {

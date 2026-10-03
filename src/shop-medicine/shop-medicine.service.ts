@@ -6,12 +6,23 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateShopMedicineDto } from './dto/create-shop-medicine.dto';
 import { UpdateShopMedicineDto } from './dto/update-shop-medicine.dto';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class ShopMedicineService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private userService: UserService,
+  ) {}
 
   async create(dto: CreateShopMedicineDto) {
+    const shopkeeper = await this.userService.requireRole(
+      dto.shopkeeperId,
+      'SHOPKEEPER',
+    );
+    if (shopkeeper.shopId !== dto.shopId) {
+      throw new BadRequestException('You can only manage your own shop inventory.');
+    }
     const shop = await this.prisma.shop.findUnique({
       where: {
         id: dto.shopId,
@@ -63,6 +74,14 @@ export class ShopMedicineService {
 
   if (!shopMedicine) {
     throw new NotFoundException('Shop medicine not found');
+  }
+
+  const shopkeeper = await this.userService.requireRole(
+    dto.shopkeeperId,
+    'SHOPKEEPER',
+  );
+  if (shopkeeper.shopId !== shopMedicine.shopId) {
+    throw new BadRequestException('You can only manage your own shop inventory.');
   }
 
   return this.prisma.shopMedicine.update({
